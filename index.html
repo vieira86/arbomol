@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ArboMol Classificator — Molecular Classification for Arboviral Diseases</title>
+<meta name="description" content="ArboMol Classificator: a SMILES-based molecular classification platform for screening compounds with potential activity against Dengue, Zika, and Chikungunya, using RDKit descriptors and Machine Learning.">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+  :root{
+    --bg: #fafaf9;
+    --bg-alt: #f1f1ef;
+    --card: #ffffff;
+    --card-border: rgba(24,24,27,0.1);
+    --text: #18181b;
+    --muted: #71717a;
+    --accent: #eab308;
+    --accent2: #ca8a04;
+    --ink: #1c1917;
+    --glow: rgba(234,179,8,0.22);
+  }
+  *{ box-sizing: border-box; margin:0; padding:0; }
+  html{ scroll-behavior: smooth; }
+  body{
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+  a{ color: inherit; text-decoration: none; }
+  img{ max-width:100%; display:block; }
+
+  .bg-glow{
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background:
+      radial-gradient(600px circle at 15% 10%, var(--glow), transparent 60%),
+      radial-gradient(500px circle at 85% 30%, rgba(24,24,27,0.05), transparent 60%),
+      radial-gradient(700px circle at 50% 90%, rgba(202,138,4,0.1), transparent 60%);
+  }
+
+  header{
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 6%;
+    background: rgba(255,255,255,0.78);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--card-border);
+  }
+  .logo{
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    font-size: 1.05rem;
+  }
+  .logo i{ color: var(--accent2); }
+  .logo span{ color: var(--accent2); }
+  nav a{
+    margin-left: 28px;
+    color: var(--muted);
+    font-size: 0.92rem;
+    transition: color .2s ease;
+  }
+  nav a:hover{ color: var(--text); }
+  @media (max-width: 640px){
+    nav{ display:none; }
+  }
+
+  .hero{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 28px;
+    padding: 110px 6% 70px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+  .eyebrow{
+    display: inline-block;
+    font-size: 0.78rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--accent2);
+    background: rgba(234,179,8,0.12);
+    border: 1px solid rgba(202,138,4,0.35);
+    padding: 6px 14px;
+    border-radius: 999px;
+  }
+  .hero h1{
+    font-size: clamp(2.4rem, 6vw, 4rem);
+    font-weight: 800;
+    line-height: 1.1;
+  }
+  .hero h1 .grad{
+    background: linear-gradient(90deg, var(--accent), var(--accent2), #92400e);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .hero p.lead{
+    color: var(--muted);
+    font-size: 1.15rem;
+    max-width: 620px;
+  }
+  .cta-row{ display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+  .btn{
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 28px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    transition: transform .2s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .btn-primary{
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    color: var(--ink);
+    box-shadow: 0 8px 24px rgba(234,179,8,0.35);
+  }
+  .btn-primary:hover{ transform: translateY(-2px); box-shadow: 0 12px 28px rgba(202,138,4,0.4); }
+  .btn-ghost{
+    border: 1px solid var(--card-border);
+    color: var(--text);
+    background: #ffffff;
+  }
+  .btn-ghost:hover{ background: var(--bg-alt); }
+
+  /* Download card */
+  .download-card{
+    margin-top: 12px;
+    width: 100%;
+    max-width: 460px;
+    background: linear-gradient(180deg, var(--card), var(--bg-alt));
+    border: 1px solid var(--card-border);
+    border-radius: 20px;
+    padding: 30px;
+    text-align: left;
+  }
+  .download-card h3{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.15rem;
+    margin-bottom: 10px;
+  }
+  .download-card h3 i{ color: var(--accent2); }
+  .download-card p{
+    color: var(--muted);
+    font-size: 0.9rem;
+    margin-bottom: 18px;
+  }
+  .download-fallback{
+    display: block;
+    text-align: center;
+    margin-top: 12px;
+    font-size: 0.82rem;
+    color: var(--muted);
+  }
+  .download-fallback a{ color: var(--accent2); font-weight: 600; }
+  .download-fallback a:hover{ text-decoration: underline; }
+  .requirements{
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid var(--card-border);
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+  .requirements strong{ color: var(--text); }
+
+  section{ padding: 70px 6%; max-width: 1200px; margin: 0 auto; }
+  .section-head{ text-align:center; max-width: 640px; margin: 0 auto 48px; }
+  .section-head .eyebrow{ margin-bottom: 14px; }
+  .section-head h2{ font-size: clamp(1.6rem, 3.5vw, 2.3rem); font-weight: 800; margin-bottom: 12px; }
+  .section-head p{ color: var(--muted); }
+
+  /* Features */
+  .features-grid{
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 22px;
+  }
+  .feature-card{
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    padding: 28px;
+    transition: transform .25s ease, border-color .25s ease;
+  }
+  .feature-card:hover{ transform: translateY(-6px); border-color: rgba(202,138,4,0.4); }
+  .feature-icon{
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+    font-size: 1.2rem;
+    color: var(--ink);
+  }
+  .feature-card h3{ font-size: 1.05rem; margin-bottom: 8px; }
+  .feature-card p{ color: var(--muted); font-size: 0.9rem; }
+
+  /* Timeline */
+  .timeline{ position: relative; display: flex; flex-direction: column; gap: 24px; }
+  .timeline-step{
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    padding: 24px;
+  }
+  .timeline-num{
+    flex: 0 0 auto;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    color: var(--ink);
+  }
+  .timeline-step h3{ font-size: 1.05rem; margin-bottom: 6px; }
+  .timeline-step p{ color: var(--muted); font-size: 0.9rem; }
+  .timeline-step code{
+    background: rgba(24,24,27,0.06);
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 0.82rem;
+    color: var(--accent2);
+  }
+
+  /* Purpose */
+  .purpose-box{
+    background: linear-gradient(180deg, var(--card), var(--bg-alt));
+    border: 1px solid var(--card-border);
+    border-radius: 24px;
+    padding: 48px;
+  }
+  .purpose-box p{ color: var(--muted); margin-bottom: 16px; font-size: 1rem; }
+  .purpose-box p:last-child{ margin-bottom: 0; }
+
+  /* CTA */
+  .cta-section{
+    text-align: center;
+    background: linear-gradient(135deg, rgba(234,179,8,0.12), rgba(202,138,4,0.1));
+    border: 1px solid var(--card-border);
+    border-radius: 24px;
+    padding: 60px 6%;
+  }
+  .cta-section h2{ font-size: clamp(1.6rem, 3.5vw, 2.2rem); font-weight: 800; margin-bottom: 14px; }
+  .cta-section p{ color: var(--muted); margin-bottom: 28px; max-width: 560px; margin-left:auto; margin-right:auto; }
+
+  /* Footer */
+  footer{
+    padding: 60px 6% 40px;
+    border-top: 1px solid var(--card-border);
+  }
+  .footer-grid{
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 40px;
+  }
+  @media (max-width: 800px){ .footer-grid{ grid-template-columns: 1fr; } }
+  .footer-grid h4{ font-size: 1rem; margin-bottom: 14px; }
+  .footer-grid p, .footer-grid li{ color: var(--muted); font-size: 0.88rem; }
+  .footer-grid ul{ list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  .footer-grid ul a{ color: var(--muted); transition: color .2s ease; }
+  .footer-grid ul a:hover{ color: var(--text); }
+  .author-block{ display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
+  .author-block img{
+    width: 56px; height: 56px; border-radius: 50%;
+    border: 2px solid var(--accent2); object-fit: cover;
+  }
+  .author-block .name{ color: var(--text); font-weight: 700; font-size: 0.95rem; }
+  .footer-social{ display: flex; gap: 16px; margin-top: 10px; }
+  .footer-social a{ color: var(--muted); display: flex; align-items: center; gap: 6px; font-size: 0.85rem; }
+  .footer-social a:hover{ color: var(--text); }
+  .footer-bottom{
+    max-width: 1200px; margin: 40px auto 0; padding-top: 24px;
+    border-top: 1px solid var(--card-border);
+    text-align: center; color: var(--muted); font-size: 0.82rem;
+  }
+
+  /* Toast */
+  .toast{
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 100;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    color: var(--ink);
+    font-weight: 700;
+    padding: 14px 20px;
+    border-radius: 12px;
+    box-shadow: 0 12px 28px rgba(0,0,0,0.35);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: opacity .3s ease, transform .3s ease;
+    pointer-events: none;
+  }
+  .toast.show{ opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+<div class="bg-glow"></div>
+
+<header>
+  <div class="logo"><i class="fas fa-atom"></i>Arbo<span>Mol</span></div>
+  <nav>
+    <a href="#recursos">Features</a>
+    <a href="#como-funciona">How It Works</a>
+    <a href="#sobre">About</a>
+  </nav>
+</header>
+
+<section class="hero">
+  <span class="eyebrow">Computational Chemistry &amp; Machine Learning</span>
+  <h1>ArboMol <span class="grad">Classificator</span></h1>
+  <p class="lead">
+    A SMILES-based molecular classification platform for screening compounds with
+    potential activity against Dengue, Zika, and Chikungunya — using RDKit descriptors
+    and a Machine Learning model trained for this classification task.
+  </p>
+  <div class="cta-row">
+    <button class="btn btn-primary" onclick="downloadFromDrive()">
+      <i class="fas fa-cloud-download-alt"></i> Download Now
+    </button>
+    <a class="btn btn-ghost" href="#recursos">
+      <i class="fas fa-list"></i> See Features
+    </a>
+  </div>
+
+  <div class="download-card">
+    <h3><i class="fas fa-download"></i> Download ArboMol Classificator</h3>
+    <p>
+      Download the complete project folder (FastAPI backend, React frontend, and the
+      trained model) via Google Drive. It's free, for educational and research
+      purposes.
+    </p>
+    <button class="btn btn-primary" style="width:100%; justify-content:center;" onclick="downloadFromDrive()">
+      <i class="fas fa-cloud-download-alt"></i> Download from Google Drive
+    </button>
+    <span class="download-fallback">
+      Download didn't start? <a href="https://drive.google.com/drive/folders/1BwA6px-aQ-qm-57EtnXYpywmOThHyit8?usp=share_link" target="_blank" rel="noopener">Open the file directly on Google Drive ↗</a>
+    </span>
+    <div class="requirements">
+      <strong>Requirements:</strong> Python 3.10+ and Node.js to run locally
+      (full instructions in the README inside the folder). Docker support included.
+    </div>
+  </div>
+</section>
+
+<section id="recursos">
+  <div class="section-head">
+    <span class="eyebrow">Features</span>
+    <h2>What ArboMol does</h2>
+    <p>Everything you need for fast, reproducible molecular screening.</p>
+  </div>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon"><i class="fas fa-flask"></i></div>
+      <h3>Single Molecule Classification</h3>
+      <p>Enter a molecule's SMILES and get the predicted class (Dengue, Zika, or Chikungunya) in seconds.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon"><i class="fas fa-layer-group"></i></div>
+      <h3>Batch Classification</h3>
+      <p>Upload a CSV or Excel file with multiple molecules and download the processed results as a spreadsheet.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon"><i class="fas fa-shield-alt"></i></div>
+      <h3>Automatic Validation</h3>
+      <p>Every SMILES is validated via RDKit, including a molecular weight check (200–700 Da) before prediction.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon"><i class="fas fa-atom"></i></div>
+      <h3>RDKit Descriptors</h3>
+      <p>Hundreds of molecular descriptors automatically computed to feed the classification model.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon"><i class="fas fa-code"></i></div>
+      <h3>Documented REST API</h3>
+      <p>FastAPI backend with interactive documentation (/docs), ready to integrate with other tools.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon"><i class="fab fa-docker"></i></div>
+      <h3>Docker Ready</h3>
+      <p>Spin up backend and frontend with a single command (docker compose up), no manual configuration.</p>
+    </div>
+  </div>
+</section>
+
+<section id="como-funciona">
+  <div class="section-head">
+    <span class="eyebrow">How It Works</span>
+    <h2>From download to your first classification</h2>
+    <p>Four simple steps to run the platform on your computer.</p>
+  </div>
+  <div class="timeline">
+    <div class="timeline-step">
+      <div class="timeline-num">1</div>
+      <div>
+        <h3>Download and extract</h3>
+        <p>Download the file using the button above and extract the folder anywhere on your computer.</p>
+      </div>
+    </div>
+    <div class="timeline-step">
+      <div class="timeline-num">2</div>
+      <div>
+        <h3>Set up the backend</h3>
+        <p>Create the Python virtual environment and install the dependencies: <code>python3 -m venv venv &amp;&amp; pip install -r requirements.txt</code></p>
+      </div>
+    </div>
+    <div class="timeline-step">
+      <div class="timeline-num">3</div>
+      <div>
+        <h3>Start the platform</h3>
+        <p>From the project's root folder, run <code>bash start.sh</code> — it starts the backend and frontend together.</p>
+      </div>
+    </div>
+    <div class="timeline-step">
+      <div class="timeline-num">4</div>
+      <div>
+        <h3>Classify molecules</h3>
+        <p>Open <code>http://localhost:3000</code> in your browser and start classifying, individually or in batch.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="sobre">
+  <div class="section-head">
+    <span class="eyebrow">About the Project</span>
+    <h2>Scientific Purpose</h2>
+  </div>
+  <div class="purpose-box">
+    <p>
+      ArboMol Classificator sits at the intersection of cheminformatics and machine
+      learning applied to natural product and bioactive compound research. The goal
+      is to make the initial screening of molecular candidates faster and more
+      accessible, indicating a molecule's potential activity against three
+      arboviral diseases of major public health relevance in Brazil: Dengue, Zika,
+      and Chikungunya.
+    </p>
+    <p>
+      The platform computes molecular descriptors from SMILES notation using RDKit
+      and applies a trained Machine Learning model to indicate the most likely
+      class, serving both as a research support tool and as an educational resource
+      for chemistry students and related fields.
+    </p>
+    <p>
+      Like any computational screening tool, the results are indicative and do not
+      replace experimental validation — the goal is to prioritize candidates for
+      further investigation, not to issue diagnoses.
+    </p>
+  </div>
+</section>
+
+<section>
+  <div class="cta-section">
+    <h2>Ready to get started?</h2>
+    <p>Download ArboMol Classificator and run the platform on your computer in just a few minutes.</p>
+    <button class="btn btn-primary" onclick="downloadFromDrive()">
+      <i class="fas fa-cloud-download-alt"></i> Download from Google Drive
+    </button>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-grid">
+    <div>
+      <div class="logo" style="margin-bottom:14px;"><i class="fas fa-atom"></i>Arbo<span>Mol</span></div>
+      <p>A molecular classification platform for screening compounds with potential activity against arboviral diseases.</p>
+    </div>
+    <div>
+      <h4>Quick Links</h4>
+      <ul>
+        <li><a href="#recursos">Features</a></li>
+        <li><a href="#como-funciona">How It Works</a></li>
+        <li><a href="#" onclick="downloadFromDrive(); return false;">Download</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>About the Author</h4>
+      <div class="author-block">
+        <img src="https://github.com/vieira86.png" alt="Prof. Dr. Rafael Vieira">
+        <div>
+          <div class="name">Prof. Dr. Rafael Vieira</div>
+          <div>Organic Chemistry &amp; Cheminformatics</div>
+        </div>
+      </div>
+      <div class="footer-social">
+        <a href="https://rafaelvieira.org" target="_blank" rel="noopener"><i class="fas fa-globe"></i> Website</a>
+        <a href="https://github.com/vieira86" target="_blank" rel="noopener"><i class="fab fa-github"></i> GitHub</a>
+        <a href="https://orcid.org/0000-0001-9003-3209" target="_blank" rel="noopener"><i class="fab fa-orcid"></i> ORCID</a>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    © 2026 ArboMol Classificator — developed by Prof. Dr. Rafael Vieira for educational and research purposes.
+  </div>
+</footer>
+
+<div id="toast" class="toast"><i class="fas fa-check-circle"></i><span id="toast-msg"></span></div>
+
+<script>
+  // Replace with your Google Drive file ID ("Anyone with the link" sharing).
+  // The ID is the segment between /d/ and /view in the sharing URL.
+  const GOOGLE_DRIVE_FILE_ID = '1OiJR_N8RAWGaGbACRsLxwftqTIEBnTqT';
+
+  function downloadFromDrive() {
+    const downloadUrl = `https://drive.google.com/uc?export=download&id=${GOOGLE_DRIVE_FILE_ID}`;
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = 'ArboMol-Classificator.zip';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast('Download started! Check your downloads folder.');
+  }
+
+  function showToast(message) {
+    const toast = document.getElementById('toast');
+    document.getElementById('toast-msg').textContent = message;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 3500);
+  }
+</script>
+</body>
+</html>
