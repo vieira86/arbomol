@@ -1,0 +1,22 @@
+# Sistema operacional
+.DS_Store
+.Rhistory
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# Node / React
+frontend/node_modules/
+frontend/build/
+
+# Resultados gerados em tempo de execução
+backend/resultados/
+resultados_predicao.xlsx
+resultados_teste.xlsx
+test_molecules.csv
+
+# Backups criados durante a revisão do projeto
+_backup_pre_redesign_*/
