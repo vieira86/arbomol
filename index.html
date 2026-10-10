@@ -358,14 +358,14 @@
     <h3><i class="fas fa-download"></i> Download ArboMol Classificator</h3>
     <p>
       Download the complete project folder (FastAPI backend, React frontend, and the
-      trained model) via Google Drive. It's free, for educational and research
+      trained model) as a .zip from GitHub. It's free, for educational and research
       purposes.
     </p>
     <button class="btn btn-primary" style="width:100%; justify-content:center;" onclick="downloadFromDrive()">
-      <i class="fas fa-cloud-download-alt"></i> Download from Google Drive
+      <i class="fas fa-download"></i> Download (.zip)
     </button>
     <span class="download-fallback">
-      Download didn't start? <a href="https://drive.google.com/drive/folders/1BwA6px-aQ-qm-57EtnXYpywmOThHyit8?usp=share_link" target="_blank" rel="noopener">Open the file directly on Google Drive ↗</a>
+      Download didn't start? <a href="https://github.com/vieira86/arbomol/archive/refs/heads/main.zip">Download the .zip directly</a> or <a href="https://github.com/vieira86/arbomol" target="_blank" rel="noopener">view the code on GitHub ↗</a>
     </span>
     <div class="requirements">
       <strong>Requirements:</strong> Python 3.10+ and Node.js to run locally
@@ -485,7 +485,7 @@
     <h2>Ready to get started?</h2>
     <p>Download ArboMol Classificator and run the platform on your computer in just a few minutes.</p>
     <button class="btn btn-primary" onclick="downloadFromDrive()">
-      <i class="fas fa-cloud-download-alt"></i> Download from Google Drive
+      <i class="fas fa-download"></i> Download (.zip)
     </button>
   </div>
 </section>
@@ -528,12 +528,11 @@
 <div id="toast" class="toast"><i class="fas fa-check-circle"></i><span id="toast-msg"></span></div>
 
 <script>
-  // Replace with your Google Drive file ID ("Anyone with the link" sharing).
-  // The ID is the segment between /d/ and /view in the sharing URL.
-  const GOOGLE_DRIVE_FILE_ID = '1OiJR_N8RAWGaGbACRsLxwftqTIEBnTqT';
+  // Latest version of the project, zipped automatically by GitHub.
+  const DOWNLOAD_URL = 'https://github.com/vieira86/arbomol/archive/refs/heads/main.zip';
 
   function downloadFromDrive() {
-    const downloadUrl = `https://drive.google.com/uc?export=download&id=${GOOGLE_DRIVE_FILE_ID}`;
+    const downloadUrl = DOWNLOAD_URL;
     const link = document.createElement('a');
     link.href = downloadUrl;
     link.download = 'ArboMol-Classificator.zip';
