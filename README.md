@@ -2,7 +2,38 @@
 
 Uma aplicação web full-stack para classificação de moléculas usando SMILES, indicando potencial atividade contra Dengue, Zika ou Chikungunya.
 
+## ✅ Pré-requisitos (instalar antes de tudo)
+
+Esse projeto tem duas partes que rodam separadas: o **backend** (Python) e o
+**frontend** (Node.js/React). Você precisa ter os dois instalados na máquina
+**antes** de seguir qualquer guia abaixo.
+
+| O que instalar | Versão necessária | Link de download | Como confirmar que instalou |
+|---|---|---|---|
+| **Python** | 3.10 ou superior | [python.org/downloads](https://www.python.org/downloads/) | `python --version` |
+| **Node.js** (já vem com `npm`) | 18 ou superior (LTS recomendado) | [nodejs.org](https://nodejs.org/) | `node --version` e `npm --version` |
+
+Notas para quem nunca instalou nada disso:
+
+- **Windows:** ao instalar o Python, marque a caixinha **"Add python.exe to PATH"**
+  na primeira tela do instalador — se não marcar, o comando `python` não vai
+  funcionar no terminal depois. No Node.js, pode usar as opções padrão do
+  instalador.
+- Depois de instalar os dois, **feche e abra o terminal de novo** antes de
+  testar os comandos de verificação (`python --version`, `node --version`),
+  senão o PATH pode não ter sido recarregado ainda.
+- Você também precisa do **código deste projeto na sua máquina** — se já tem a
+  pasta baixada/extraída (como parece ser o seu caso), pode ignorar este
+  ponto. Caso contrário, baixe o `.zip` do repositório e extraia, ou clone com
+  `git clone` se tiver o [Git](https://git-scm.com/downloads) instalado.
+- Instalar o Python/Node.js é feito **uma única vez** na máquina. Os passos de
+  `venv`/`pip install`/`npm install` abaixo também só precisam ser refeitos se
+  você apagar as pastas `venv` ou `node_modules`, ou se as dependências do
+  projeto mudarem.
+
 ## ⚡ Guia rápido (primeira vez / depois de clonar)
+
+### macOS / Linux
 
 Passo a passo completo, do zero, rodando local (sem Docker):
 
@@ -10,7 +41,7 @@ Passo a passo completo, do zero, rodando local (sem Docker):
 # 1. Prepare o ambiente do backend (só precisa fazer isso uma vez)
 cd backend
 python3 -m venv venv          # confirme que esse python3 é 3.10 ou superior
-source venv/bin/activate      # No Windows: venv\Scripts\activate
+source venv/bin/activate
 pip install -r requirements.txt
 cd ..
 
@@ -30,6 +61,63 @@ direito. Mate esse processo antigo e tente de novo:
 ```bash
 lsof -ti:8000 | xargs kill -9
 ```
+
+### Windows (PowerShell ou cmd — sem Git Bash/WSL)
+
+`start.sh` é um script **bash** e não roda nativamente no `cmd.exe` nem no
+PowerShell — por isso é preciso subir backend e frontend **manualmente, em
+duas janelas de terminal separadas** (deixe as duas abertas e rodando ao mesmo
+tempo). Siga a ordem abaixo do zero:
+
+0. Instale o **Python 3.10+** e o **Node.js** — veja a seção
+   [Pré-requisitos](#-pré-requisitos-instalar-antes-de-tudo) acima. Confirme
+   com `python --version` e `node --version` antes de continuar.
+1. Extraia/baixe a pasta do projeto (ex.: `arbomol-main`) e abra um terminal
+   (PowerShell) **dentro dela** — é a pasta onde estão os arquivos `README.md`,
+   `backend/`, `frontend/` e os `.pkl`.
+
+**Janela 1 — Backend** (a partir da pasta raiz do projeto):
+
+```powershell
+cd backend
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
+python main_working.py
+```
+
+Deixe essa janela aberta. O backend fica em `http://localhost:8000`
+(documentação interativa em `http://localhost:8000/docs`). Se aparecer
+`(venv)` no início do prompt, o ambiente virtual está ativo corretamente.
+
+> **Importante:** não use `uvicorn main:app` nem `python -m uvicorn main:app`
+> — o arquivo da API se chama `main_working.py`, e ele já sobe o próprio
+> servidor internamente. O comando certo é sempre `python main_working.py`.
+
+**Janela 2 — Frontend** (abra um novo terminal/PowerShell, a partir da pasta raiz do projeto):
+
+```powershell
+cd frontend
+npm install
+npm start
+```
+
+Isso abre automaticamente `http://localhost:3000` no navegador padrão (se não
+abrir sozinho, abra manualmente esse endereço). É nessa página que você usa o
+app — cole um SMILES ou envie um arquivo CSV/Excel.
+
+Para encerrar tudo, aperte `Ctrl+C` em cada uma das duas janelas.
+
+Se aparecer o erro **"address already in use"** / **porta 8000 ocupada**, tem
+um backend antigo ainda rodando. Descubra e mate o processo:
+
+```powershell
+netstat -ano | findstr :8000
+taskkill /PID <numero_do_PID_mostrado_acima> /F
+```
+
+> Se preferir rodar `start.sh` mesmo assim, instale o [Git for Windows](https://git-scm.com/download/win)
+> (vem com o Git Bash) e execute o comando dentro do **Git Bash**, não no `cmd`/PowerShell.
 
 ## 🏗️ Arquitetura
 
@@ -75,6 +163,10 @@ bash start.sh
 ```
 
 Isso cria o ambiente virtual do backend, instala as dependências de backend e frontend, e sobe os dois servidores.
+
+> **Windows:** `start.sh` é um script bash e não funciona no `cmd`/PowerShell
+> nativo (só dentro do Git Bash). Siga a seção **Windows** do guia rápido
+> acima, que sobe backend e frontend manualmente em duas janelas.
 
 ### Manualmente
 
@@ -260,6 +352,7 @@ antes dessa correção (ou com um Python < 3.10). Resolva apagando o ambiente vi
 antigo e recriando:
 
 ```bash
+# macOS/Linux
 cd backend
 rm -rf venv
 python3 -m venv venv   # certifique-se de que este python3 é >= 3.10
@@ -267,10 +360,23 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
+```powershell
+# Windows
+cd backend
+rmdir /s /q venv
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
+```
+
 ### Frontend não conecta ao backend / "Erro ao conectar com o servidor"
 - Confirme se o backend realmente está no ar: abra `http://localhost:8000` direto no navegador — deve aparecer um JSON. Se não abrir, o backend não subiu.
-- Rode `cd backend && source venv/bin/activate && python main_working.py` (sem o `start.sh`, que roda em background e pode esconder o erro) para ver a mensagem de erro real.
-- Se aparecer `[Errno 48] address already in use` na porta 8000, tem um processo antigo preso nela. Mate-o com `lsof -ti:8000 | xargs kill -9` e suba o backend de novo.
+- Rode o backend manualmente, numa janela à parte (sem `start.sh`, que roda em background e pode esconder o erro), para ver a mensagem de erro real:
+  - macOS/Linux: `cd backend && source venv/bin/activate && python main_working.py`
+  - Windows: `cd backend`, depois `venv\Scripts\activate`, depois `python main_working.py`
+- Se a porta 8000 já estiver em uso por um processo antigo, mate-o e suba o backend de novo:
+  - macOS/Linux: `lsof -ti:8000 | xargs kill -9`
+  - Windows: `netstat -ano | findstr :8000` (anota o PID na última coluna) e depois `taskkill /PID <PID> /F`
 - Se estiver rodando fora de `localhost`, confirme se `REACT_APP_API_URL` (frontend) e `CORS_ORIGINS` (backend) estão configuradas corretamente
 
 ### Erros de predição
