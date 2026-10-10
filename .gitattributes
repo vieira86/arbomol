@@ -1,1 +1,9 @@
-/index.html export-ignore
+# Arquivos que ficam no repositório mas NÃO entram no .zip de download
+# (https://github.com/vieira86/arbomol/archive/refs/heads/main.zip).
+# O .zip é a aplicação pronta para instalar; o material de pesquisa fica
+# disponível para quem clonar ou navegar pelo repositório.
+
+/index.html      export-ignore
+/train_model.py  export-ignore
+data/**         export-ignore
+*.ipynb          export-ignore

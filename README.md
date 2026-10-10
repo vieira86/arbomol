@@ -119,6 +119,31 @@ taskkill /PID <numero_do_PID_mostrado_acima> /F
 > Se preferir rodar `start.sh` mesmo assim, instale o [Git for Windows](https://git-scm.com/download/win)
 > (vem com o Git Bash) e execute o comando dentro do **Git Bash**, não no `cmd`/PowerShell.
 
+## 🔁 Retreinar o modelo
+
+Os arquivos `.pkl` já vêm prontos no repositório; esta seção só é necessária
+para reproduzir o treino ou treinar com dados novos.
+
+```bash
+cd backend && source venv/bin/activate && cd ..   # usa o mesmo ambiente do backend
+python train_model.py
+```
+
+O script lê as planilhas de `data/`, refaz toda a curadoria (validação dos
+SMILES, deduplicação dentro e entre classes, cálculo dos 217 descritores
+RDKit), avalia por validação cruzada estratificada e regrava
+`modelo_final.pkl`, `label_encoder.pkl` e `colunas.pkl`.
+
+Todas as etapas aleatórias usam `random_state = 42`, então duas execuções
+produzem um modelo **byte a byte idêntico**. Desempenho esperado (validação
+cruzada estratificada de 5 partições, 5 repetições, n = 912):
+
+| Métrica | Valor |
+|---|---|
+| Acurácia | 0,728 ± 0,027 |
+| Macro-F1 | 0,718 ± 0,026 |
+| Linha de base (classe majoritária) | 0,533 |
+
 ## 🏗️ Arquitetura
 
 - **Backend**: FastAPI (Python)
@@ -148,6 +173,9 @@ Plataforma_Tropical/
 ├── modelo_final.pkl        # Modelo treinado
 ├── label_encoder.pkl       # Encoder de classes
 ├── colunas.pkl             # Colunas dos descritores
+├── data/                   # Planilhas de SMILES usadas no treino (ver data/README.md)
+├── train_model.py          # Treino reprodutível do modelo (gera os .pkl acima)
+├── requirements.txt        # Atalho para backend/requirements.txt
 ├── docker-compose.yml
 └── README.md                # Este arquivo
 ```

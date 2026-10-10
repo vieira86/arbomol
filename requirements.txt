@@ -1,0 +1,12 @@
+# ArboMol Classificator — dependências Python do projeto
+#
+# As dependências reais estão declaradas em backend/requirements.txt.
+# Este arquivo existe apenas como atalho, para que o comando abaixo
+# funcione também a partir da pasta raiz do projeto:
+#
+#     pip install -r requirements.txt
+#
+# Requer Python 3.10 ou superior. Veja o README.md para o passo a passo
+# completo de instalação (incluindo a criação do ambiente virtual).
+
+-r backend/requirements.txt
