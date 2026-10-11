@@ -482,6 +482,77 @@ main {
   opacity: 0.85;
 }
 
+/* Etapa 1: triagem de arbovírus ------------------------------------------------ */
+
+.gate-row {
+  display: grid;
+  grid-template-columns: 128px 1fr 44px;
+  align-items: center;
+  gap: 10px;
+  margin: 14px 0 4px;
+  font-size: 0.78rem;
+}
+
+.gate-label {
+  font-weight: 600;
+  opacity: 0.9;
+}
+
+.gate-track {
+  height: 9px;
+  border-radius: 999px;
+  background: rgba(24, 24, 27, 0.1);
+  overflow: hidden;
+}
+
+.gate-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+
+.gate-value {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.result-note {
+  margin-top: 10px;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  opacity: 0.85;
+}
+
+.verdict-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.verdict-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(24, 24, 27, 0.05);
+  font-size: 0.74rem;
+}
+
+.verdict-chip .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
+}
+
+@media (max-width: 520px) {
+  .gate-row { grid-template-columns: 1fr 44px; }
+  .gate-label { grid-column: 1 / -1; }
+}
+
 /* Explicação (SHAP) ------------------------------------------------------------ */
 
 .explain-box {

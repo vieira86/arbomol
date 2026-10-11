@@ -2,6 +2,9 @@
 .DS_Store
 .Rhistory
 
+# Jupyter
+.ipynb_checkpoints/
+
 # Python
 __pycache__/
 *.pyc
@@ -20,3 +23,15 @@ test_molecules.csv
 
 # Backups criados durante a revisão do projeto
 _backup_pre_redesign_*/
+
+# Modelo da versao 1, substituido pela arquitetura de dois estagios.
+# Pode ser apagado da pasta; nao entra mais no repositorio.
+modelo_final.pkl
+
+# Planilhas do Cortellis e conjunto curado: ficam so na maquina,
+# nao vao para o GitHub (licenca da Clarivate).
+data/
+
+# Notebooks do estudo: ficam so na maquina, nao vao para o GitHub.
+*.ipynb
+.ipynb_checkpoints/

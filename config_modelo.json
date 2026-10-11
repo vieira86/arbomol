@@ -1,0 +1,12 @@
+{
+  "limite_provavel": 0.5,
+  "limite_possivel": 0.35,
+  "classes_etapa2": [
+    "chikungunya",
+    "dengue",
+    "zika"
+  ],
+  "negativo_usado_no_treino": "influenza",
+  "n_treino_porteiro": 1530,
+  "n_treino_especialista": 779
+}

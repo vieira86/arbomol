@@ -1,6 +1,47 @@
 # ArboMol Classificator — Classificação Molecular
 
-Uma aplicação web full-stack para classificação de moléculas usando SMILES, indicando potencial atividade contra Dengue, Zika ou Chikungunya.
+Uma aplicação web full-stack que recebe moléculas em notação SMILES e indica se
+elas se parecem com compostos em desenvolvimento contra arbovírus e, em caso
+positivo, com qual deles — Dengue, Zika ou Chikungunya.
+
+## 🧭 Como a classificação funciona (dois estágios)
+
+A partir da versão 2.0 a resposta vem de **dois modelos encadeados**, e não de
+um único classificador de três classes:
+
+| Etapa | Arquivo | O que decide |
+|---|---|---|
+| 1 — porteiro | `modelo_porteiro.pkl` | A molécula se parece com um composto de programa anti-arbovírus? (treinado contra compostos de influenza, pareados por massa molecular) |
+| 2 — especialista | `modelo_especialista.pkl` | Só roda se a etapa 1 aprovar: distribui entre dengue, zika e chikungunya |
+
+O porteiro devolve uma **confiança de 0 a 1**, e os limites de decisão ficam em
+`config_modelo.json`:
+
+| Confiança | Veredito | O que aparece na tela |
+|---|---|---|
+| ≥ 0,50 | `provavel` | "Likely an arbovirus-associated compound" + a classe |
+| 0,35 – 0,50 | `possivel` | "Possibly..." (baixa confiança) + a classe |
+| < 0,35 | `improvavel` | "Unlikely..." — **nenhuma classe é atribuída** |
+
+Esse é o ponto principal da mudança: antes, qualquer molécula recebia
+obrigatoriamente um dos três rótulos, até sacarose. Agora, uma molécula fora do
+domínio é barrada na etapa 1 e a plataforma diz que ela não se parece com um
+composto anti-arbovírus, em vez de inventar uma classe.
+
+O limite de 0,35 foi escolhido porque preserva 96% dos compostos de arbovírus
+conhecidos (contra 81% em 0,50), ao custo de deixar passar alguns compostos de
+outras doenças para a etapa 2 — um erro menos grave, já que a resposta vem
+marcada como de baixa confiança.
+
+> **O que o rótulo significa.** As classes vêm do campo `Condition` dos
+> registros do Cortellis, isto é, "composto que aparece em um programa de
+> desenvolvimento indexado para este vírus" — e **não** atividade antiviral
+> medida em ensaio. O `improvavel` da etapa 1 significa "não se parece com os
+> compostos desses programas", e não "esta molécula é inativa".
+
+O estudo completo — curadoria dos dados, escolha dos negativos, as quatro formas
+de validação e a escolha dos limites — está no notebook `treino_arbomol_v2.ipynb`,
+que não acompanha o repositório.
 
 ## ✅ Pré-requisitos (instalar antes de tudo)
 
@@ -124,25 +165,49 @@ taskkill /PID <numero_do_PID_mostrado_acima> /F
 Os arquivos `.pkl` já vêm prontos no repositório; esta seção só é necessária
 para reproduzir o treino ou treinar com dados novos.
 
+> Para rodar esta seção você precisa das planilhas em `data/`, que **não**
+> acompanham o repositório (ver a observação em "Estrutura do Projeto"). Sem
+> elas, a plataforma funciona normalmente com os modelos já treinados.
+
 ```bash
 cd backend && source venv/bin/activate && cd ..   # usa o mesmo ambiente do backend
 python train_model.py
 ```
 
-O script lê as planilhas de `data/`, refaz toda a curadoria (validação dos
-SMILES, deduplicação dentro e entre classes, cálculo dos 217 descritores
-RDKit), avalia por validação cruzada estratificada e regrava
-`modelo_final.pkl`, `label_encoder.pkl` e `colunas.pkl`.
+O script lê as planilhas de `data/`, refaz toda a curadoria (rótulo a partir do
+campo `Condition`, amostragem dos negativos de influenza pareada por massa
+molecular em decis, validação dos SMILES, remoção de duplicatas e de SMILES
+ambíguos, cálculo dos 217 descritores RDKit), avalia por divisão por scaffold
+de Murcko e regrava `modelo_porteiro.pkl`, `modelo_especialista.pkl`,
+`label_encoder.pkl`, `colunas.pkl` e `config_modelo.json`.
 
 Todas as etapas aleatórias usam `random_state = 42`, então duas execuções
-produzem um modelo **byte a byte idêntico**. Desempenho esperado (validação
-cruzada estratificada de 5 partições, 5 repetições, n = 912):
+produzem modelos **byte a byte idênticos** (conferível pelo `sha256` que o
+script imprime).
 
-| Métrica | Valor |
-|---|---|
-| Acurácia | 0,728 ± 0,027 |
-| Macro-F1 | 0,718 ± 0,026 |
-| Linha de base (classe majoritária) | 0,533 |
+Desempenho esperado (divisão por scaffold em 5 partições — o cenário realista,
+em que o modelo só vê esqueletos químicos que não estavam no treino):
+
+| Etapa | Métrica | Valor |
+|---|---|---|
+| 1 — é arbovírus? | Acurácia | 0,802 |
+| 2 — qual dos três? | Acurácia | 0,703 |
+| 2 — qual dos três? | Macro-F1 | 0,679 |
+
+A divisão por scaffold dá números mais baixos — e mais honestos — do que a
+divisão aleatória, porque moléculas de um mesmo programa de pesquisa
+compartilham o esqueleto e, numa divisão aleatória, aparecem dos dois lados.
+
+Conjunto resultante: 1.530 moléculas (751 influenza, 467 dengue, 163
+chikungunya, 149 zika). As 124 moléculas com dois arbovírus no `Condition`
+ficam fora do treino.
+
+Passos opcionais:
+
+```bash
+python train_model.py --skip-eval    # só regrava os artefatos, sem avaliar
+python test_modelos.py               # teste de fumaça dos dois estágios
+```
 
 ## 🏗️ Arquitetura
 
@@ -150,7 +215,11 @@ cruzada estratificada de 5 partições, 5 repetições, n = 912):
 - **Frontend**: React
 - **Comunicação**: API REST
 - **Validação**: Massa molecular entre 200-700 Da
-- **Modelos**: Machine Learning com descritores RDKit
+- **Modelos**: dois `Pipeline` do imbalanced-learn (RandomUnderSampler →
+  RobustScaler → SelectKBest → ExtraTreesClassifier) sobre 217 descritores 2D
+  do RDKit
+- **Explicabilidade**: SHAP (`TreeExplainer`), aplicado ao estágio que tomou a
+  decisão final
 
 ## 📁 Estrutura do Projeto
 
@@ -169,16 +238,31 @@ Plataforma_Tropical/
 │   │   └── index.html      # Template HTML
 │   ├── package.json        # Dependências Node.js
 │   └── Dockerfile
-├── predictor_simple.py     # Cálculo de descritores + predição (modelos cacheados em memória)
-├── modelo_final.pkl        # Modelo treinado
-├── label_encoder.pkl       # Encoder de classes
-├── colunas.pkl             # Colunas dos descritores
-├── data/                   # Planilhas de SMILES usadas no treino (ver data/README.md)
-├── train_model.py          # Treino reprodutível do modelo (gera os .pkl acima)
-├── requirements.txt        # Atalho para backend/requirements.txt
+├── predictor_simple.py        # Descritores + os dois estágios (modelos cacheados em memória)
+├── modelo_porteiro.pkl        # Etapa 1 — é arbovírus?
+├── modelo_especialista.pkl    # Etapa 2 — dengue, zika ou chikungunya
+├── label_encoder.pkl          # Classes da etapa 2
+├── colunas.pkl                # Ordem dos 217 descritores
+├── config_modelo.json         # Limites de decisão do porteiro
+├── data/                      # Planilhas do Cortellis (local, fora do repositório)
+├── train_model.py             # Treino reprodutível (gera todos os artefatos acima)
+├── test_modelos.py            # Teste de fumaça dos dois estágios
+├── requirements.txt           # Atalho para backend/requirements.txt
 ├── docker-compose.yml
-└── README.md                # Este arquivo
+└── README.md                  # Este arquivo
 ```
+
+Duas observações sobre distribuição:
+
+- **Fora do repositório** (`.gitignore`): a pasta `data/` e os notebooks
+  (`*.ipynb`). As planilhas são exportações do Cortellis/Clarivate, cuja licença
+  não permite redistribuição; os notebooks do estudo ficam só na máquina. Em
+  consequência, quem clonar o repositório recebe os modelos já treinados e pode
+  rodar a plataforma, mas precisará das próprias planilhas para refazer o treino
+  com o `train_model.py`.
+- **No repositório, mas fora do `.zip` de download**: `train_model.py` e o
+  `index.html` da página de divulgação, marcados como `export-ignore` no
+  `.gitattributes`. Quem baixa a plataforma recebe só o que precisa para rodá-la.
 
 ## 🚀 Como Executar
 
@@ -241,15 +325,22 @@ Em um deploy real (backend e frontend em domínios/portas diferentes de `localho
 
 ### Classificação Individual
 - Insira um SMILES no campo de texto
-- Sistema valida a massa molecular (200-700 Da)
-- Retorna a classificação: Dengue, Zika ou Chikungunya
-- Mostra informações adicionais como massa molecular
+- Sistema valida o SMILES e a massa molecular (200-700 Da)
+- Mostra a **confiança de arbovírus** (barra de 0 a 100%) e o veredito da etapa 1
+- Se a molécula for aprovada, mostra a classe (Dengue, Zika ou Chikungunya) e a
+  probabilidade de cada uma
+- Se for barrada, **não** atribui classe — e a explicação SHAP responde "por que
+  foi descartada?"
 
 ### Classificação em Lote
 - Upload de arquivos CSV ou Excel
 - Coluna obrigatória: "Smiles"
-- Processamento de múltiplas moléculas em uma única passada (modelo carregado uma vez, não recarregado por molécula)
-- Download dos resultados com predições
+- Processamento de múltiplas moléculas em uma única passada (modelos carregados
+  uma vez, descritores calculados de uma vez)
+- Resumo dos vereditos (quantas prováveis, possíveis e improváveis)
+- Download dos resultados em Excel, com as colunas `Arbovirus_Confidence`,
+  `Verdict`, `Prediction` (vazia nas moléculas barradas), `Mass` e as três
+  `Prob_*`
 - Relatório de erros para SMILES inválidos
 
 ### Validação
@@ -269,31 +360,49 @@ Classifica uma única molécula.
 }
 ```
 
-**Response:**
+**Response — molécula aprovada pela etapa 1:**
 ```json
 {
-  "classe": "Dengue",
-  "massa": 300.31,
   "smiles": "CC(C)C(=O)OC[C@@H]1[C@H]([C@H]([C@@H](O1)n2ccc(nc2=O)NO)O)O",
-  "modelo": "real",
-  "probabilidades": {
-    "Chikungunya": 0.07,
-    "Dengue": 0.78,
-    "Zika": 0.15
-  },
+  "massa": 300.31,
+  "confianca_arbovirus": 0.9850,
+  "veredito": "provavel",
+  "veredito_texto": "Likely an arbovirus-associated compound",
+  "modelo": "dois_estagios",
+  "classe": "dengue",
+  "probabilidades": { "chikungunya": 0.07, "dengue": 0.78, "zika": 0.15 },
   "explicacao": [
-    { "descritor": "TPSA", "valor": 63.6, "contribuicao": 0.42, "direcao": "aumenta" },
-    { "descritor": "MolLogP", "valor": 1.31, "contribuicao": -0.28, "direcao": "diminui" }
+    { "descritor": "TPSA", "valor": 63.6, "contribuicao": 0.42, "direcao": "increases" },
+    { "descritor": "MolLogP", "valor": 1.31, "contribuicao": -0.28, "direcao": "decreases" }
   ]
 }
 ```
 
-`probabilidades` traz a probabilidade de cada classe (via `predict_proba`) e
-`explicacao` traz os descritores moleculares (RDKit) que mais pesaram na
-decisão do modelo, calculados com [SHAP](https://shap.readthedocs.io/)
-(`TreeExplainer`). Ambas as chaves são "melhor esforço": se o cálculo falhar
-por qualquer motivo, a predição principal (`classe`/`massa`/`smiles`) ainda é
-retornada normalmente, só sem essas duas chaves extras.
+**Response — molécula barrada pela etapa 1** (note a ausência de `classe` e de
+`probabilidades`):
+```json
+{
+  "smiles": "OC[C@H]1O[C@@](CO)(O[C@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O)[C@@H](O)[C@@H]1O",
+  "massa": 342.30,
+  "confianca_arbovirus": 0.0900,
+  "veredito": "improvavel",
+  "veredito_texto": "Unlikely to be an arbovirus-associated compound",
+  "modelo": "dois_estagios",
+  "explicacao": [ "..." ]
+}
+```
+
+`confianca_arbovirus`, `veredito` e `veredito_texto` vêm **sempre**; `classe` e
+`probabilidades` só aparecem quando o veredito é `provavel` ou `possivel`.
+
+`explicacao` traz os descritores do RDKit que mais pesaram na decisão,
+calculados com [SHAP](https://shap.readthedocs.io/) (`TreeExplainer`) — sobre o
+porteiro quando a molécula foi barrada, sobre o especialista quando ela passou.
+Tanto `probabilidades` quanto `explicacao` são "melhor esforço": se o cálculo
+falhar, a predição principal ainda é retornada, só sem essas chaves.
+
+**Em caso de entrada inválida** (SMILES malformado ou massa fora da faixa) a
+resposta é `{"erro": "..."}`, com código HTTP 200.
 
 ### POST /predict_batch
 Processa múltiplas moléculas de um arquivo.
@@ -303,17 +412,27 @@ Processa múltiplas moléculas de um arquivo.
 **Response:**
 ```json
 {
-  "message": "Processado 45 de 50 moléculas",
+  "message": "Processed 45 of 50 molecules",
   "validas": 45,
   "invalidas": 5,
-  "erros": ["Linha 10: Massa molecular fora do intervalo"],
-  "download_url": "/download_resultados/resultado_<id>.xlsx"
+  "erros": ["Row 10: Molecular weight out of range (200-700 Da). Value: 46.07"],
+  "download_url": "/download_resultados/resultado_<id>.xlsx",
+  "modelo": "dois_estagios",
+  "resumo_vereditos": { "provavel": 28, "possivel": 6, "improvavel": 11 },
+  "predicoes": ["... as cinco primeiras, para pré-visualização ..."]
 }
 ```
 
-O arquivo Excel de resultados (`download_url`) inclui, além de `Predicao` e
-`Massa`, as colunas `Prob_Chikungunya`, `Prob_Dengue` e `Prob_Zika` com a
-probabilidade de cada classe para cada molécula.
+O arquivo Excel de resultados (`download_url`) preserva as colunas originais da
+planilha enviada e acrescenta:
+
+| Coluna | Conteúdo |
+|---|---|
+| `Arbovirus_Confidence` | saída da etapa 1, de 0 a 1 |
+| `Verdict` | o texto do veredito (`Invalid` nas linhas recusadas) |
+| `Prediction` | dengue, zika ou chikungunya — **vazia** nas moléculas barradas |
+| `Mass` | massa molecular |
+| `Prob_Chikungunya`, `Prob_Dengue`, `Prob_Zika` | probabilidades da etapa 2 |
 
 ### GET /download_resultados/{filename}
 Baixa o arquivo Excel com os resultados de uma execução específica (o nome do
@@ -328,6 +447,8 @@ arquivo é único por execução, retornado em `download_url`).
   - Dengue: Vermelho/rosa
   - Zika: Amarelo
   - Chikungunya: Roxo
+- Cores por veredito da etapa 1: verde (provável), âmbar (possível, baixa
+  confiança) e cinza (improvável), com a barra de confiança no mesmo tom
 
 ## 🔧 Tecnologias
 
@@ -373,7 +494,7 @@ CC[C@H](C)C(=O)O[C@H]1C[C@H](C=C2[C@H]1[C@H]([C@H](C=C2)C)CC[C@@H]3C[C@H](CC(=O)
 - É necessário **Python 3.10 ou superior** para instalar as dependências do backend
 
 ### Erro "No module named 'numpy._core'"
-Esse erro acontece quando o `modelo_final.pkl` (salvo com numpy >= 2.0 / scikit-learn
+Esse erro acontece quando os arquivos `.pkl` (salvos com numpy >= 2.0 / scikit-learn
 1.7.2) é carregado por um ambiente com numpy mais antigo. O `backend/requirements.txt`
 já fixa as versões corretas — se o erro aparecer, o `venv` provavelmente foi criado
 antes dessa correção (ou com um Python < 3.10). Resolva apagando o ambiente virtual

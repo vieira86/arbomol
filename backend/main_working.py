@@ -30,7 +30,7 @@ from predictor_simple import (  # noqa: E402
     MASSA_MAXIMA,
 )
 
-app = FastAPI(title="ArboMol Classificator API", version="1.1.0")
+app = FastAPI(title="ArboMol Classificator API", version="2.0.0")
 
 # Origens permitidas para CORS. Em produção, defina a variável de ambiente
 # CORS_ORIGINS com a(s) URL(s) real(is) do frontend, separadas por vírgula
@@ -89,12 +89,24 @@ def validar_massa(smiles):
 
 @app.get("/")
 def read_root():
-    return {"message": "ArboMol Classificator API", "status": "online", "modelo": "real"}
+    from predictor_simple import load_models
+    c = load_models()
+    return {
+        "message": "ArboMol Classificator API",
+        "status": "online",
+        "modelo": "dois_estagios",
+        "etapas": {
+            "1": "porteiro — a molécula tem características de arbovírus?",
+            "2": "especialista — dengue, zika ou chikungunya",
+        },
+        "limites": {"provavel": c["limite_provavel"], "possivel": c["limite_possivel"]},
+        "faixa_massa_Da": [MASSA_MINIMA, MASSA_MAXIMA],
+    }
 
 
 @app.post("/predict")
 def predict(data: SmilesInput):
-    """Classifica uma única molécula usando os modelos reais."""
+    """Classifica uma única molécula com a arquitetura de dois estágios."""
 
     valido, info = validar_massa(data.smiles)
     if not valido:
@@ -109,7 +121,7 @@ def predict(data: SmilesInput):
 
 @app.post("/predict_batch")
 async def predict_batch(file: UploadFile = File(...)):
-    """Classifica múltiplas moléculas de um arquivo usando os modelos reais."""
+    """Classifica múltiplas moléculas de um arquivo (dois estágios)."""
 
     if not file.filename.endswith(('.csv', '.xlsx', '.xls')):
         raise HTTPException(status_code=400, detail="File must be CSV or Excel")
@@ -149,18 +161,26 @@ async def predict_batch(file: UploadFile = File(...)):
         if "erro" in batch_result:
             raise HTTPException(status_code=500, detail=batch_result["erro"])
 
+        # As colunas numericas nascem como float: criadas como inteiro, o pandas
+        # recusa receber valores decimais depois.
         df_resultado = df.copy()
-        df_resultado['Prediction'] = 'Invalid'
-        df_resultado['Mass'] = 0
-        df_resultado['Prob_Chikungunya'] = None
-        df_resultado['Prob_Dengue'] = None
-        df_resultado['Prob_Zika'] = None
+        df_resultado['Arbovirus_Confidence'] = pd.Series(dtype="float64")
+        df_resultado['Verdict'] = pd.Series(dtype="object")
+        df_resultado['Prediction'] = pd.Series(dtype="object")
+        df_resultado['Mass'] = pd.Series(dtype="float64")
+        for _c in ('Prob_Chikungunya', 'Prob_Dengue', 'Prob_Zika'):
+            df_resultado[_c] = pd.Series(dtype="float64")
+        df_resultado['Verdict'] = df_resultado['Verdict'].fillna('Invalid')
 
         for i, idx in enumerate(indices_validos):
             if i < len(batch_result["resultados"]):
                 resultado = batch_result["resultados"][i]
-                df_resultado.loc[idx, 'Prediction'] = resultado.get("classe", "Error")
-                df_resultado.loc[idx, 'Mass'] = resultado.get("massa", 0)
+                df_resultado.loc[idx, 'Arbovirus_Confidence'] = resultado.get("confianca_arbovirus")
+                df_resultado.loc[idx, 'Verdict'] = resultado.get("veredito_texto", "Error")
+                # Moleculas reprovadas pela etapa 1 nao recebem classe: a coluna
+                # fica vazia em vez de forcar um dos tres virus.
+                df_resultado.loc[idx, 'Prediction'] = resultado.get("classe")
+                df_resultado.loc[idx, 'Mass'] = float(resultado.get("massa") or 0.0)
                 probs = resultado.get("probabilidades") or {}
                 df_resultado.loc[idx, 'Prob_Chikungunya'] = probs.get('chikungunya')
                 df_resultado.loc[idx, 'Prob_Dengue'] = probs.get('dengue')
@@ -172,14 +192,20 @@ async def predict_batch(file: UploadFile = File(...)):
         output_path = os.path.join(RESULTS_DIR, output_filename)
         df_resultado.to_excel(output_path, index=False)
 
+        res = batch_result.get("resultados", [])
+        contagem = {}
+        for r in res:
+            contagem[r.get("veredito", "?")] = contagem.get(r.get("veredito", "?"), 0) + 1
+
         return {
             "message": f"Processed {len(smiles_validos)} of {len(df)} molecules",
             "validas": len(smiles_validos),
             "invalidas": len(df) - len(smiles_validos),
             "erros": erros if erros else None,
             "download_url": f"/download_resultados/{output_filename}",
-            "modelo": "real",
-            "predicoes": batch_result.get("resultados", [])[:5]
+            "modelo": "dois_estagios",
+            "resumo_vereditos": contagem,
+            "predicoes": res[:5]
         }
 
     except HTTPException:

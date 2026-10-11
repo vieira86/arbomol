@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Upload, TestTube, Download, AlertCircle, CheckCircle, Loader2, FileText, Atom } from 'lucide-react';
+import { Upload, TestTube, Download, AlertCircle, CheckCircle, Loader2, FileText, Atom, ShieldAlert } from 'lucide-react';
 import axios from 'axios';
 import './App.css';
 
@@ -18,6 +18,15 @@ const CLASS_STYLES = {
   chikungunya: { bg: 'rgba(124,58,237,0.1)', border: 'rgba(124,58,237,0.32)', text: '#6d28d9', badge: 'tag-chik' },
 };
 const DEFAULT_CLASS_STYLE = { bg: '#f7f7f5', border: 'var(--card-border)', text: 'var(--text)' };
+
+// Etapa 1 do modelo: antes de dizer qual arbovírus, o sistema decide se a
+// molécula tem características de composto de arbovírus.
+const VERDICT_STYLES = {
+  provavel: { bg: 'rgba(16,122,87,0.08)', border: 'rgba(16,122,87,0.3)', text: '#0f766e' },
+  possivel: { bg: 'rgba(217,119,6,0.09)', border: 'rgba(217,119,6,0.32)', text: '#b45309' },
+  improvavel: { bg: '#f4f4f2', border: 'var(--card-border)', text: '#52514e' },
+};
+const getVerdictStyle = (v) => VERDICT_STYLES[v] || DEFAULT_CLASS_STYLE;
 
 function App() {
   const [smiles, setSmiles] = useState('');
@@ -214,16 +223,48 @@ function App() {
               <div
                 className="result-box fade-in"
                 style={{
-                  background: getClassStyle(result.classe).bg,
-                  borderColor: getClassStyle(result.classe).border,
-                  color: getClassStyle(result.classe).text,
+                  background: getVerdictStyle(result.veredito).bg,
+                  borderColor: getVerdictStyle(result.veredito).border,
+                  color: getVerdictStyle(result.veredito).text,
                 }}
               >
                 <div className="result-box-head">
-                  <CheckCircle size={18} />
-                  <span>Result</span>
+                  {result.veredito === 'improvavel' ? <ShieldAlert size={18} /> : <CheckCircle size={18} />}
+                  <span>{result.veredito_texto || 'Result'}</span>
                 </div>
-                <p className="result-class">{result.classe}</p>
+
+                <div className="gate-row">
+                  <span className="gate-label">Arbovirus likeness</span>
+                  <div className="gate-track">
+                    <div
+                      className="gate-fill"
+                      style={{
+                        width: `${((result.confianca_arbovirus ?? 0) * 100).toFixed(1)}%`,
+                        background: getVerdictStyle(result.veredito).text,
+                      }}
+                    />
+                  </div>
+                  <span className="gate-value">
+                    {((result.confianca_arbovirus ?? 0) * 100).toFixed(0)}%
+                  </span>
+                </div>
+
+                {result.classe && <p className="result-class">{result.classe}</p>}
+
+                {result.veredito === 'possivel' && (
+                  <p className="result-note">
+                    The screening stage is not confident this compound belongs to an
+                    arbovirus programme. Read the breakdown below with caution.
+                  </p>
+                )}
+                {result.veredito === 'improvavel' && (
+                  <p className="result-note">
+                    This molecule does not resemble the compounds under development
+                    against Dengue, Zika or Chikungunya, so no per-virus breakdown is
+                    shown. This is not evidence that the molecule is inactive.
+                  </p>
+                )}
+
                 <p className="result-meta">Molecular weight: {result.massa?.toFixed(2)} Da</p>
                 <p className="result-smiles">SMILES: {result.smiles}</p>
 
@@ -251,7 +292,11 @@ function App() {
 
                 {result.explicacao && result.explicacao.length > 0 && (
                   <div className="explain-box">
-                    <p className="explain-title">Why this classification?</p>
+                    <p className="explain-title">
+                      {result.veredito === 'improvavel'
+                        ? 'Why was it screened out?'
+                        : 'Why this classification?'}
+                    </p>
                     <p className="explain-hint">
                       Molecular descriptors (RDKit) that most influenced the model's decision:
                     </p>
@@ -330,6 +375,23 @@ function App() {
                 <p className="result-meta"><strong>Valid:</strong> {batchResult.validas} molecules</p>
                 <p className="result-meta warn"><strong>Invalid:</strong> {batchResult.invalidas} molecules</p>
 
+                {batchResult.resumo_vereditos && (
+                  <div className="verdict-summary">
+                    {[
+                      ['provavel', 'Likely arbovirus'],
+                      ['possivel', 'Possible (low confidence)'],
+                      ['improvavel', 'Screened out'],
+                    ].map(([k, rotulo]) =>
+                      batchResult.resumo_vereditos[k] ? (
+                        <div className="verdict-chip" key={k}>
+                          <span className="dot" style={{ background: getVerdictStyle(k).text }} />
+                          {rotulo}: <strong>{batchResult.resumo_vereditos[k]}</strong>
+                        </div>
+                      ) : null
+                    )}
+                  </div>
+                )}
+
                 {batchResult.validas > 0 && (
                   <button onClick={handleDownload} className="btn btn-ghost btn-block download-btn">
                     <Download size={16} />
@@ -392,8 +454,11 @@ function App() {
           </div>
 
           <div className="note-box">
-            <strong>Validation:</strong> every molecule is validated for molecular
-            weight (between {MASSA_MINIMA} and {MASSA_MAXIMA} Da) before classification.
+            <strong>How it works:</strong> every molecule is first checked for molecular
+            weight (between {MASSA_MINIMA} and {MASSA_MAXIMA} Da). It then goes through a
+            screening stage that decides whether it resembles compounds under development
+            against arboviruses. Only molecules that pass are broken down across the three
+            viruses.
           </div>
         </section>
       </main>
