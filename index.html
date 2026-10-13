@@ -75,15 +75,20 @@
   }
 
   .hero{
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 56px;
     align-items: center;
-    text-align: center;
-    gap: 28px;
-    padding: 110px 6% 70px;
-    max-width: 900px;
+    padding: 90px 6% 70px;
+    max-width: 1200px;
     margin: 0 auto;
+    min-height: calc(100vh - 70px);
   }
+  @media (max-width: 960px){
+    .hero{ grid-template-columns: 1fr; gap: 40px; padding-top: 60px; min-height: 0; }
+  }
+  .hero-text{ display: flex; flex-direction: column; gap: 24px; align-items: flex-start; }
+  @media (max-width: 960px){ .hero-text{ align-items: center; text-align: center; } }
   .eyebrow{
     display: inline-block;
     font-size: 0.78rem;
@@ -96,7 +101,7 @@
     border-radius: 999px;
   }
   .hero h1{
-    font-size: clamp(2.4rem, 6vw, 4rem);
+    font-size: clamp(2.4rem, 5vw, 3.6rem);
     font-weight: 800;
     line-height: 1.1;
   }
@@ -108,10 +113,11 @@
   }
   .hero p.lead{
     color: var(--muted);
-    font-size: 1.15rem;
-    max-width: 620px;
+    font-size: 1.12rem;
+    max-width: 560px;
   }
-  .cta-row{ display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+  .cta-row{ display: flex; gap: 14px; flex-wrap: wrap; }
+  @media (max-width: 960px){ .cta-row{ justify-content: center; } }
   .btn{
     display: inline-flex;
     align-items: center;
@@ -137,48 +143,76 @@
     background: #ffffff;
   }
   .btn-ghost:hover{ background: var(--bg-alt); }
+  .req-row{
+    display: flex; flex-wrap: wrap; gap: 8px 20px;
+    color: var(--muted); font-size: 0.86rem;
+  }
+  @media (max-width: 960px){ .req-row{ justify-content: center; } }
+  .req-row i{ margin-right: 5px; }
 
-  /* Download card */
-  .download-card{
-    margin-top: 12px;
+  /* Quick start terminal */
+  .term{
     width: 100%;
-    max-width: 460px;
-    background: linear-gradient(180deg, var(--card), var(--bg-alt));
-    border: 1px solid var(--card-border);
-    border-radius: 20px;
-    padding: 30px;
+    min-width: 0;
+    background: #1c1917;
+    border-radius: 18px;
+    box-shadow: 0 24px 60px rgba(28,25,23,0.28);
+    overflow: hidden;
     text-align: left;
   }
-  .download-card h3{
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 1.15rem;
-    margin-bottom: 10px;
+  .term-bar{
+    display: flex; align-items: center; gap: 8px;
+    padding: 12px 14px;
+    background: #292524;
   }
-  .download-card h3 i{ color: var(--accent2); }
-  .download-card p{
-    color: var(--muted);
-    font-size: 0.9rem;
-    margin-bottom: 18px;
+  .dot{ width: 12px; height: 12px; border-radius: 50%; flex: 0 0 auto; }
+  .term-tabs{ display: flex; gap: 4px; margin-left: 10px; }
+  .term-tab{
+    background: transparent; border: none; cursor: pointer;
+    color: #a8a29e; font-family: inherit; font-size: 0.8rem; font-weight: 600;
+    padding: 5px 12px; border-radius: 7px;
+    display: inline-flex; align-items: center; gap: 6px;
   }
-  .download-fallback{
-    display: block;
-    text-align: center;
-    margin-top: 12px;
-    font-size: 0.82rem;
-    color: var(--muted);
+  .term-tab{ white-space: nowrap; }
+  .term-tab:hover{ color: #f5f5f4; }
+  @media (max-width: 480px){
+    #copy-label{ display: none; }
+    .term-tabs{ margin-left: 4px; }
+    .dot{ width: 9px; height: 9px; }
+    .term-tab{ padding: 5px 8px; font-size: 0.76rem; }
+    .term pre{ font-size: 0.78rem; padding: 12px 16px 18px; }
+    .term-note{ padding: 12px 16px 0; }
   }
-  .download-fallback a{ color: var(--accent2); font-weight: 600; }
-  .download-fallback a:hover{ text-decoration: underline; }
-  .requirements{
-    margin-top: 18px;
-    padding-top: 16px;
-    border-top: 1px solid var(--card-border);
-    font-size: 0.78rem;
-    color: var(--muted);
+  .term-tab.active{ background: #44403c; color: #fde047; }
+  .term-copy{
+    margin-left: auto; background: transparent; border: none; cursor: pointer;
+    color: #a8a29e; font-size: 0.8rem; font-family: inherit;
+    display: inline-flex; align-items: center; gap: 6px; padding: 5px 8px; border-radius: 7px;
   }
-  .requirements strong{ color: var(--text); }
+  .term-copy:hover{ color: #f5f5f4; background: #44403c; }
+  .term-note{
+    padding: 12px 22px 0; color: #a8a29e; font-size: 0.8rem;
+  }
+  .term pre{
+    margin: 0;
+    padding: 14px 22px 22px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.85rem;
+    line-height: 1.75;
+    color: #f5f5f4;
+    overflow-x: auto;
+  }
+  .term .pr{ color: #fde047; user-select: none; }
+  .term .cm{ color: #78716c; }
+  .term .ok{ color: #86efac; }
+  .term .url{ color: #93c5fd; }
+  .term-panel[hidden]{ display: none; }
+  .stack-chips{ display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+  @media (max-width: 960px){ .stack-chips{ justify-content: center; } }
+  .stack-chips span{
+    background: #fff; border: 1px solid var(--card-border);
+    border-radius: 999px; padding: 4px 12px; font-size: 0.82rem; color: var(--text);
+  }
 
   section{ padding: 70px 6%; max-width: 1200px; margin: 0 auto; }
   .section-head{ text-align:center; max-width: 640px; margin: 0 auto 48px; }
@@ -338,38 +372,74 @@
 </header>
 
 <section class="hero">
-  <span class="eyebrow">Computational Chemistry &amp; Machine Learning</span>
-  <h1>ArboMol <span class="grad">Classificator</span></h1>
-  <p class="lead">
-    A SMILES-based molecular classification platform for screening compounds with
-    potential activity against Dengue, Zika, and Chikungunya — using RDKit descriptors
-    and a Machine Learning model trained for this classification task.
-  </p>
-  <div class="cta-row">
-    <button class="btn btn-primary" onclick="downloadFromDrive()">
-      <i class="fas fa-cloud-download-alt"></i> Download Now
-    </button>
-    <a class="btn btn-ghost" href="#recursos">
-      <i class="fas fa-list"></i> See Features
-    </a>
+  <div class="hero-text">
+    <span class="eyebrow">Computational Chemistry &amp; Machine Learning</span>
+    <h1>ArboMol <span class="grad">Classificator</span></h1>
+    <p class="lead">
+      A SMILES-based molecular classification platform for screening compounds with
+      potential activity against Dengue, Zika, and Chikungunya — using RDKit descriptors
+      and a Machine Learning model trained for this classification task.
+    </p>
+    <div class="cta-row">
+      <button class="btn btn-primary" onclick="downloadZip()">
+        <i class="fas fa-download"></i> Download (.zip)
+      </button>
+      <a class="btn btn-ghost" href="#recursos">
+        <i class="fas fa-list"></i> See Features
+      </a>
+    </div>
+    <div class="req-row">
+      <span><i class="fab fa-windows"></i>Windows</span>
+      <span><i class="fab fa-apple"></i>macOS</span>
+      <span><i class="fab fa-linux"></i>Linux</span>
+      <span><i class="fab fa-python"></i>Python 3.10+</span>
+      <span><i class="fab fa-node-js"></i>Node.js 18+</span>
+    </div>
   </div>
 
-  <div class="download-card">
-    <h3><i class="fas fa-download"></i> Download ArboMol Classificator</h3>
-    <p>
-      Download the complete project folder (FastAPI backend, React frontend, and the
-      trained model) as a .zip from GitHub. It's free, for educational and research
-      purposes.
-    </p>
-    <button class="btn btn-primary" style="width:100%; justify-content:center;" onclick="downloadFromDrive()">
-      <i class="fas fa-download"></i> Download (.zip)
-    </button>
-    <span class="download-fallback">
-      Download didn't start? <a href="https://github.com/vieira86/arbomol/archive/refs/heads/main.zip">Download the .zip directly</a> or <a href="https://github.com/vieira86/arbomol" target="_blank" rel="noopener">view the code on GitHub ↗</a>
-    </span>
-    <div class="requirements">
-      <strong>Requirements:</strong> Python 3.10+ and Node.js to run locally
-      (full instructions in the README inside the folder). Docker support included.
+  <div>
+    <div class="term">
+      <div class="term-bar">
+        <span class="dot" style="background:#f87171"></span>
+        <span class="dot" style="background:#facc15"></span>
+        <span class="dot" style="background:#4ade80"></span>
+        <div class="term-tabs" role="tablist">
+          <button class="term-tab active" data-os="unix" role="tab" onclick="showOS('unix')"><i class="fab fa-apple"></i> macOS / Linux</button>
+          <button class="term-tab" data-os="win" role="tab" onclick="showOS('win')"><i class="fab fa-windows"></i> Windows</button>
+        </div>
+        <button class="term-copy" onclick="copyCommands()" title="Copy commands"><i class="far fa-copy"></i><span id="copy-label">Copy</span></button>
+      </div>
+
+      <div class="term-panel" id="panel-unix">
+        <div class="term-note">After unzipping, open a terminal in the project folder:</div>
+<pre><span class="pr">$</span> cd backend
+<span class="pr">$</span> python3 -m venv venv
+<span class="pr">$</span> source venv/bin/activate
+<span class="pr">$</span> pip install -r requirements.txt
+<span class="pr">$</span> cd ..
+<span class="pr">$</span> bash start.sh
+<span class="ok">&#10003;</span> Backend   <span class="url">http://localhost:8000</span>
+<span class="ok">&#10003;</span> Frontend  <span class="url">http://localhost:3000</span></pre>
+      </div>
+
+      <div class="term-panel" id="panel-win" hidden>
+        <div class="term-note">After unzipping, open <b>two</b> PowerShell windows in the project folder:</div>
+<pre><span class="cm"># Window 1 — backend</span>
+<span class="pr">&gt;</span> cd backend
+<span class="pr">&gt;</span> python -m venv venv
+<span class="pr">&gt;</span> venv\Scripts\activate
+<span class="pr">&gt;</span> pip install -r requirements.txt
+<span class="pr">&gt;</span> python main_working.py
+
+<span class="cm"># Window 2 — frontend</span>
+<span class="pr">&gt;</span> cd frontend
+<span class="pr">&gt;</span> npm install
+<span class="pr">&gt;</span> npm start
+<span class="ok">&#10003;</span> Opens <span class="url">http://localhost:3000</span></pre>
+      </div>
+    </div>
+    <div class="stack-chips">
+      <span>RDKit</span><span>scikit-learn</span><span>FastAPI</span><span>React</span><span>Docker</span>
     </div>
   </div>
 </section>
@@ -484,7 +554,7 @@
   <div class="cta-section">
     <h2>Ready to get started?</h2>
     <p>Download ArboMol Classificator and run the platform on your computer in just a few minutes.</p>
-    <button class="btn btn-primary" onclick="downloadFromDrive()">
+    <button class="btn btn-primary" onclick="downloadZip()">
       <i class="fas fa-download"></i> Download (.zip)
     </button>
   </div>
@@ -501,7 +571,7 @@
       <ul>
         <li><a href="#recursos">Features</a></li>
         <li><a href="#como-funciona">How It Works</a></li>
-        <li><a href="#" onclick="downloadFromDrive(); return false;">Download</a></li>
+        <li><a href="#" onclick="downloadZip(); return false;">Download</a></li>
       </ul>
     </div>
     <div>
@@ -531,7 +601,7 @@
   // Latest version of the project, zipped automatically by GitHub.
   const DOWNLOAD_URL = 'https://github.com/vieira86/arbomol/archive/refs/heads/main.zip';
 
-  function downloadFromDrive() {
+  function downloadZip() {
     const downloadUrl = DOWNLOAD_URL;
     const link = document.createElement('a');
     link.href = downloadUrl;
@@ -541,6 +611,33 @@
     document.body.removeChild(link);
     showToast('Download started! Check your downloads folder.');
   }
+
+  // Quick start: show the instructions for the visitor's operating system
+  const COMMANDS = {
+    unix: 'cd backend\npython3 -m venv venv\nsource venv/bin/activate\npip install -r requirements.txt\ncd ..\nbash start.sh',
+    win: '# Window 1 - backend\ncd backend\npython -m venv venv\nvenv\\Scripts\\activate\npip install -r requirements.txt\npython main_working.py\n\n# Window 2 - frontend\ncd frontend\nnpm install\nnpm start'
+  };
+  let currentOS = 'unix';
+
+  function showOS(os) {
+    currentOS = os;
+    document.querySelectorAll('.term-tab').forEach(t => t.classList.toggle('active', t.dataset.os === os));
+    document.getElementById('panel-unix').hidden = os !== 'unix';
+    document.getElementById('panel-win').hidden = os !== 'win';
+  }
+
+  function copyCommands() {
+    const label = document.getElementById('copy-label');
+    const done = () => { label.textContent = 'Copied!'; setTimeout(() => label.textContent = 'Copy', 2000); };
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(COMMANDS[currentOS]).then(done).catch(() => {});
+    }
+  }
+
+  (function detectOS() {
+    const platform = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || navigator.userAgent || '';
+    if (/win/i.test(platform)) showOS('win');
+  })();
 
   function showToast(message) {
     const toast = document.getElementById('toast');

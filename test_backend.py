@@ -48,7 +48,10 @@ def test_backend():
             else:
                 print(f"✅ Predição individual funcionou!")
                 print(f"   SMILES: {result['smiles']}")
-                print(f"   Classe: {result['classe']}")
+                print(f"   Confiança de arbovírus: {result['confianca_arbovirus']:.2f}")
+                print(f"   Veredito: {result['veredito_texto']}")
+                # Moléculas barradas na etapa 1 não recebem classe.
+                print(f"   Classe: {result.get('classe', '(nenhuma — barrada na etapa 1)')}")
                 print(f"   Massa: {result['massa']:.2f} Da")
         else:
             print(f"❌ Erro na predição individual: {response.status_code}")
@@ -76,7 +79,9 @@ def test_backend():
             else:
                 print(f"✅ Predição com massa válida funcionou!")
                 print(f"   SMILES: {result['smiles'][:50]}...")
-                print(f"   Classe: {result['classe']}")
+                print(f"   Confiança de arbovírus: {result['confianca_arbovirus']:.2f}")
+                print(f"   Veredito: {result['veredito_texto']}")
+                print(f"   Classe: {result.get('classe', '(nenhuma — barrada na etapa 1)')}")
                 print(f"   Massa: {result['massa']:.2f} Da")
         else:
             print(f"❌ Erro na predição: {response.status_code}")
