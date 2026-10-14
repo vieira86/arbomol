@@ -3,7 +3,7 @@
 # porque main_working.py depende de arquivos que vivem na raiz do projeto
 # (predictor_simple.py e os modelos .pkl), não apenas dentro de backend/.
 #
-# Python 3.10+ é necessário porque modelo_final.pkl foi salvo com
+# Python 3.10+ é necessário porque os modelos .pkl foram salvos com
 # numpy>=2.0 / scikit-learn 1.7.2 (ambos exigem Python >= 3.10).
 FROM python:3.10-slim
 
@@ -23,7 +23,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copiar o módulo de predição e os modelos treinados (raiz do projeto)
 COPY predictor_simple.py .
-COPY modelo_final.pkl label_encoder.pkl colunas.pkl ./
+COPY modelo_porteiro.pkl modelo_especialista.pkl label_encoder.pkl colunas.pkl config_modelo.json ./
 
 # Copiar código da API
 COPY backend/main_working.py .

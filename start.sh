@@ -6,7 +6,7 @@ echo "🚀 Iniciando Plataforma de Classificação Molecular"
 echo "=================================================="
 
 # Verificar se estamos na pasta correta
-if [ ! -f "modelo_final.pkl" ]; then
+if [ ! -f "modelo_porteiro.pkl" ]; then
     echo "❌ Erro: Execute este script da pasta raiz do projeto"
     echo "   (onde estão os arquivos .pkl)"
     exit 1
