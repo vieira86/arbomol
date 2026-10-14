@@ -423,18 +423,17 @@
       </div>
 
       <div class="term-panel" id="panel-win" hidden>
-        <div class="term-note">After unzipping, open <b>two</b> PowerShell windows in the project folder:</div>
+        <div class="term-note">Unzip to a local folder such as <code>C:\ArboMol</code>, then open <b>two</b> PowerShell windows in the project folder. We use <code>npm.cmd</code> and <code>venv\Scripts\python.exe</code> so PowerShell's script-blocking policy doesn't get in the way.</div>
 <pre><span class="cm"># Window 1 — backend</span>
 <span class="pr">&gt;</span> cd backend
 <span class="pr">&gt;</span> python -m venv venv
-<span class="pr">&gt;</span> venv\Scripts\activate
-<span class="pr">&gt;</span> pip install -r requirements.txt
-<span class="pr">&gt;</span> python main_working.py
+<span class="pr">&gt;</span> venv\Scripts\python.exe -m pip install -r requirements.txt
+<span class="pr">&gt;</span> venv\Scripts\python.exe main_working.py
 
 <span class="cm"># Window 2 — frontend</span>
 <span class="pr">&gt;</span> cd frontend
-<span class="pr">&gt;</span> npm install
-<span class="pr">&gt;</span> npm start
+<span class="pr">&gt;</span> npm.cmd install
+<span class="pr">&gt;</span> npm.cmd start
 <span class="ok">&#10003;</span> Opens <span class="url">http://localhost:3000</span></pre>
       </div>
     </div>
@@ -615,7 +614,7 @@
   // Quick start: show the instructions for the visitor's operating system
   const COMMANDS = {
     unix: 'cd backend\npython3 -m venv venv\nsource venv/bin/activate\npip install -r requirements.txt\ncd ..\nbash start.sh',
-    win: '# Window 1 - backend\ncd backend\npython -m venv venv\nvenv\\Scripts\\activate\npip install -r requirements.txt\npython main_working.py\n\n# Window 2 - frontend\ncd frontend\nnpm install\nnpm start'
+    win: '# Window 1 - backend\ncd backend\npython -m venv venv\nvenv\\Scripts\\python.exe -m pip install -r requirements.txt\nvenv\\Scripts\\python.exe main_working.py\n\n# Window 2 - frontend\ncd frontend\nnpm.cmd install\nnpm.cmd start'
   };
   let currentOS = 'unix';
 

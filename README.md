@@ -113,7 +113,9 @@ tempo). Siga a ordem abaixo do zero:
 0. Instale o **Python 3.10+** e o **Node.js** — veja a seção
    [Pré-requisitos](#-pré-requisitos-instalar-antes-de-tudo) acima. Confirme
    com `python --version` e `node --version` antes de continuar.
-1. Extraia/baixe a pasta do projeto (ex.: `arbomol-main`) e abra um terminal
+1. Extraia/baixe a pasta do projeto (ex.: `arbomol-main`) numa pasta local,
+   como `C:\ArboMol` (evite pastas de rede ou compartilhadas, como as do
+   Parallels/OneDrive), e abra um terminal
    (PowerShell) **dentro dela** — é a pasta onde estão os arquivos `README.md`,
    `backend/`, `frontend/` e os `.pkl`.
 
@@ -122,14 +124,17 @@ tempo). Siga a ordem abaixo do zero:
 ```powershell
 cd backend
 python -m venv venv
-venv\Scripts\activate
-pip install -r requirements.txt
-python main_working.py
+venv\Scripts\python.exe -m pip install -r requirements.txt
+venv\Scripts\python.exe main_working.py
 ```
 
 Deixe essa janela aberta. O backend fica em `http://localhost:8000`
-(documentação interativa em `http://localhost:8000/docs`). Se aparecer
-`(venv)` no início do prompt, o ambiente virtual está ativo corretamente.
+(documentação interativa em `http://localhost:8000/docs`).
+
+> Usamos `venv\Scripts\python.exe` direto, em vez de `venv\Scripts\activate`,
+> porque o PowerShell costuma bloquear o `activate` com o erro *"a execução de
+> scripts foi desabilitada neste sistema"*. Assim funciona sem mudar nenhuma
+> configuração do Windows.
 
 > **Importante:** não use `uvicorn main:app` nem `python -m uvicorn main:app`
 > — o arquivo da API se chama `main_working.py`, e ele já sobe o próprio
@@ -139,9 +144,14 @@ Deixe essa janela aberta. O backend fica em `http://localhost:8000`
 
 ```powershell
 cd frontend
-npm install
-npm start
+npm.cmd install
+npm.cmd start
 ```
+
+> No PowerShell, use `npm.cmd` (e não só `npm`): o `npm` comum é bloqueado pelo
+> mesmo motivo acima (*"npm.ps1 não pode ser carregado"*). Se preferir liberar
+> de vez, rode uma única vez `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`
+> e responda **S** — depois disso `npm` funciona normalmente.
 
 Isso abre automaticamente `http://localhost:3000` no navegador padrão (se não
 abrir sozinho, abra manualmente esse endereço). É nessa página que você usa o
